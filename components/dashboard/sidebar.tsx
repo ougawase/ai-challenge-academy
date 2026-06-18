@@ -14,6 +14,7 @@ import {
   FileText,
   LogOut,
   Menu,
+  Lightbulb,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
@@ -22,6 +23,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 const navItems = [
   { href: '/dashboard', label: 'ダッシュボード', icon: LayoutDashboard },
   { href: '/dashboard/profile', label: 'プロフィール', icon: User },
+  { href: '/dashboard/guidance', label: '活動提案', icon: Lightbulb },
   { href: '/dashboard/self-analysis', label: 'AI自己分析', icon: Brain },
   { href: '/dashboard/social-issues', label: '社会課題診断', icon: Globe },
   { href: '/dashboard/projects', label: 'プロジェクト', icon: FolderOpen },

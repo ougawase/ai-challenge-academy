@@ -292,7 +292,7 @@ export default function ProfilePage() {
             <p className="text-sm font-semibold text-gray-700 mb-3">次のステップを選んでください</p>
             <div className="grid sm:grid-cols-2 gap-4">
               {/* 実績を積む */}
-              <button onClick={() => router.push('/dashboard/self-analysis')}
+              <button onClick={() => router.push('/dashboard/guidance')}
                 className={`text-left p-5 rounded-xl border-2 transition-all hover:shadow-md ${
                   analysis.recommended_path === 'achievement'
                     ? 'border-blue-500 bg-blue-50'
