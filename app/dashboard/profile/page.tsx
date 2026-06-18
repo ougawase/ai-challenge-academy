@@ -13,6 +13,11 @@ import { Loader2, CheckCircle, ArrowRight, TrendingUp, FileText } from 'lucide-r
 
 const gradeOptions = ['中学1年', '中学2年', '中学3年', '高校1年', '高校2年', '高校3年', '浪人']
 const interestOptions = ['地方創生', '教育', '環境', '医療・福祉', 'テクノロジー', '国際支援', '起業', '農業', '観光', 'アート', 'スポーツ', 'その他']
+const facultyOptions = [
+  '法学・政治学', '経済学・経営学・商学', '文学・人文学', '社会学・メディア',
+  '国際関係・国際教養', '理工学・情報科学', '医学・看護・保健',
+  '教育学・心理学', '環境・農学', '芸術・デザイン', '総合政策・政策科学', '福祉・社会福祉',
+]
 
 interface Analysis {
   readiness_score: number
@@ -40,6 +45,8 @@ export default function ProfilePage() {
     school_name: '',
     location: '',
     interests: [] as string[],
+    target_faculties: [] as string[],
+    faculty_direction: '',
     strengths: '',
     weaknesses: '',
     future_goal: '',
@@ -60,6 +67,8 @@ export default function ProfilePage() {
           school_name: data.school_name || '',
           location: data.location || '',
           interests: data.interests || [],
+          target_faculties: data.target_faculties || [],
+          faculty_direction: data.faculty_direction || '',
           strengths: data.strengths || '',
           weaknesses: data.weaknesses || '',
           future_goal: data.future_goal || '',
@@ -82,6 +91,15 @@ export default function ProfilePage() {
     }))
   }
 
+  const toggleFaculty = (faculty: string) => {
+    setForm(prev => ({
+      ...prev,
+      target_faculties: prev.target_faculties.includes(faculty)
+        ? prev.target_faculties.filter(f => f !== faculty)
+        : [...prev.target_faculties, faculty],
+    }))
+  }
+
   const handleSave = async () => {
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
@@ -94,6 +112,8 @@ export default function ProfilePage() {
       school_name: form.school_name,
       location: form.location,
       interests: form.interests,
+      target_faculties: form.target_faculties,
+      faculty_direction: form.faculty_direction,
       strengths: form.strengths,
       weaknesses: form.weaknesses,
       future_goal: form.future_goal,
@@ -178,6 +198,37 @@ export default function ProfilePage() {
                 {interest}
               </button>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 志望学部系統 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>志望学部系統</CardTitle>
+          <CardDescription>興味のある学部・分野を選んでください（複数選択可）。活動提案の質が大きく上がります。</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-2">
+            {facultyOptions.map(faculty => (
+              <button key={faculty} onClick={() => toggleFaculty(faculty)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  form.target_faculties.includes(faculty)
+                    ? 'bg-purple-600 text-white border-purple-600'
+                    : 'bg-white text-gray-600 border-gray-300 hover:border-purple-300'
+                }`}>
+                {faculty}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            <Label>学部・学科へのこだわり・理由（任意）</Label>
+            <Textarea
+              placeholder="例：地元の過疎化問題を政策で解決したいので政治学に興味がある。経営学部でビジネスを学び起業したい。"
+              value={form.faculty_direction}
+              onChange={e => setForm({ ...form, faculty_direction: e.target.value })}
+              rows={3}
+            />
           </div>
         </CardContent>
       </Card>

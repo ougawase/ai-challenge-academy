@@ -20,6 +20,8 @@ export async function POST(req: NextRequest) {
 学校：${profile.school_name || '未入力'}
 地域：${profile.location || '未入力'}
 興味・関心：${(profile.interests || []).join('、') || '未入力'}
+志望学部系統：${(profile.target_faculties || []).join('、') || '未入力'}
+学部へのこだわり・理由：${profile.faculty_direction || '未入力'}
 強み：${profile.strengths || '未入力'}
 弱み：${profile.weaknesses || '未入力'}
 将来の夢：${profile.future_goal || '未入力'}
