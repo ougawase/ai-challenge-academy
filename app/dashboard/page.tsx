@@ -1,140 +1,145 @@
 import { createClient } from '@/lib/supabase/server'
 import Link from 'next/link'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import { Brain, Globe, FolderOpen, BookOpen, FileText, ArrowRight } from 'lucide-react'
+import { FolderOpen, BookOpen, FileText, GitMerge, Lightbulb, User, Brain } from 'lucide-react'
+import { DailyMission } from '@/components/dashboard/daily-mission'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const [profileRes, projectsRes, logsRes, essaysRes, analysisRes] = await Promise.all([
+  const [profileRes, projectsRes, logsRes, essaysRes] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', user!.id).single(),
-    supabase.from('projects').select('*').eq('user_id', user!.id).eq('status', 'active'),
-    supabase.from('activity_logs').select('*').eq('user_id', user!.id),
-    supabase.from('essays').select('*').eq('user_id', user!.id),
-    supabase.from('self_analysis_results').select('*').eq('user_id', user!.id).order('created_at', { ascending: false }).limit(1).single(),
+    supabase.from('projects').select('id').eq('user_id', user!.id).eq('status', 'active'),
+    supabase.from('activity_logs').select('date').eq('user_id', user!.id).order('date', { ascending: false }),
+    supabase.from('essays').select('id').eq('user_id', user!.id),
   ])
 
   const profile = profileRes.data
   const projects = projectsRes.data || []
   const logs = logsRes.data || []
   const essays = essaysRes.data || []
-  const analysis = analysisRes.data
 
-  // Calculate portfolio completion
+  // ポートフォリオ完成度
   const sections = [
     !!profile?.name,
     !!profile?.strengths,
     !!profile?.future_goal,
-    !!analysis,
+    !!(profile?.target_faculties?.length),
+    !!(profile?.application_deadline),
     projects.length > 0,
     logs.length > 0,
     essays.length > 0,
   ]
   const completion = Math.round((sections.filter(Boolean).length / sections.length) * 100)
 
+  // 連続記録日数
+  const sortedDates = [...new Set(logs.map((l: { date: string }) => l.date))].sort().reverse()
+  let streak = 0
   const today = new Date().toISOString().split('T')[0]
-  const todayTasks: string[] = []
-  projects.forEach((p) => {
-    if (p.week1_tasks && Array.isArray(p.week1_tasks)) {
-      todayTasks.push(...(p.week1_tasks as string[]).slice(0, 2))
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  if (sortedDates[0] === today || sortedDates[0] === yesterday) {
+    for (let i = 0; i < sortedDates.length; i++) {
+      const expected = new Date(Date.now() - i * 86400000).toISOString().split('T')[0]
+      if (sortedDates[i] === expected) streak++
+      else break
     }
-  })
+  }
+
+  const isNewUser = !profile?.name
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          こんにちは、{profile?.name || 'さん'} 👋
-        </h1>
-        <p className="text-gray-500 mt-1">今日も一歩ずつ前進しましょう</p>
-      </div>
+    <div className="space-y-5 max-w-2xl">
+      {/* 新規ユーザー案内 */}
+      {isNewUser && (
+        <Link href="/dashboard/profile">
+          <Card className="border-blue-300 bg-blue-50 hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="pt-4 pb-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <User className="h-5 w-5 text-white" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-blue-900">まずはプロフィールを入力しましょう</p>
+                <p className="text-sm text-blue-700">入力すると、AIが今日やることを毎朝提案してくれます</p>
+              </div>
+              <span className="text-blue-500 font-bold text-lg">→</span>
+            </CardContent>
+          </Card>
+        </Link>
+      )}
 
-      {/* Portfolio Progress */}
-      <Card className="border-blue-100 bg-blue-50/50">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-semibold text-blue-800">ポートフォリオ完成度</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4">
-            <Progress value={completion} className="flex-1 h-3" />
-            <span className="text-2xl font-bold text-blue-700">{completion}%</span>
+      {/* AI塾長 + 今日のミッション（クライアントコンポーネント） */}
+      <DailyMission />
+
+      {/* ポートフォリオ完成度 */}
+      <Card>
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-gray-700">出願ポートフォリオ完成度</span>
+            <span className="text-xl font-bold text-blue-600">{completion}%</span>
           </div>
-          {completion < 100 && (
-            <p className="text-sm text-blue-600 mt-2">
-              {!profile?.name && 'プロフィールを入力して '}
-              {!analysis && '自己分析を完了して '}
-              {projects.length === 0 && 'プロジェクトを作成して '}
-              完成度を上げましょう
-            </p>
-          )}
+          <Progress value={completion} className="h-2.5" />
+          <div className="mt-2.5 flex flex-wrap gap-1.5">
+            {[
+              { done: !!profile?.name, label: '基本情報' },
+              { done: !!(profile?.target_faculties?.length), label: '志望学部' },
+              { done: !!(profile?.application_deadline), label: '出願日' },
+              { done: !!profile?.strengths, label: '強み・軸' },
+              { done: projects.length > 0, label: 'プロジェクト' },
+              { done: logs.length > 0, label: '活動ログ' },
+              { done: essays.length > 0, label: '志望理由書' },
+              { done: !!profile?.future_goal, label: '将来の夢' },
+            ].map(({ done, label }) => (
+              <span key={label} className={`text-xs px-2 py-0.5 rounded-full ${done ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                {done ? '✓' : '○'} {label}
+              </span>
+            ))}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {/* 統計 */}
+      <div className="grid grid-cols-4 gap-2">
         {[
-          { label: '活動中プロジェクト', value: projects.length, icon: FolderOpen, color: 'text-blue-600' },
-          { label: '活動ログ', value: logs.length, icon: BookOpen, color: 'text-green-600' },
-          { label: '志望理由書', value: essays.length, icon: FileText, color: 'text-purple-600' },
-          { label: '活動日数', value: new Set(logs.map((l) => l.date)).size, icon: Brain, color: 'text-orange-600' },
+          { label: 'プロジェクト', value: projects.length, icon: FolderOpen, color: 'text-blue-500' },
+          { label: '活動ログ', value: logs.length, icon: BookOpen, color: 'text-green-500' },
+          { label: '志望理由書', value: essays.length, icon: FileText, color: 'text-purple-500' },
+          { label: '連続日数', value: streak, icon: Brain, color: 'text-orange-500', suffix: '日' },
         ].map((s) => {
           const Icon = s.icon
           return (
-            <Card key={s.label}>
-              <CardContent className="pt-4 pb-4">
-                <Icon className={`h-5 w-5 ${s.color} mb-1`} />
-                <p className="text-2xl font-bold">{s.value}</p>
-                <p className="text-xs text-gray-500">{s.label}</p>
+            <Card key={s.label} className="text-center">
+              <CardContent className="pt-3 pb-3 px-2">
+                <Icon className={`h-4 w-4 ${s.color} mx-auto mb-1`} />
+                <p className="text-xl font-bold text-gray-800">{s.value}<span className="text-xs font-normal text-gray-400">{s.suffix || ''}</span></p>
+                <p className="text-xs text-gray-400 leading-tight">{s.label}</p>
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      {/* AI Next Suggestion */}
-      {analysis && (
-        <Card className="border-green-100 bg-green-50/50">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-semibold text-green-800">🤖 AIからの提案</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-green-700">
-              あなたの軸：<strong>{analysis.admission_axis}</strong>
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              今日は活動ログを記録して、AIにフィードバックをもらいましょう。
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quick Actions */}
+      {/* クイックアクション */}
       <div>
-        <h2 className="font-semibold text-gray-700 mb-3">クイックアクション</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-0.5">すべての機能</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {[
-            { href: '/dashboard/self-analysis', icon: Brain, label: 'AI自己分析を始める', desc: 'AIカウンセラーと対話', color: 'blue' },
-            { href: '/dashboard/social-issues', icon: Globe, label: '社会課題を診断する', desc: '取り組む課題を見つける', color: 'green' },
-            { href: '/dashboard/projects/new', icon: FolderOpen, label: 'プロジェクトを作る', desc: '活動計画を立てる', color: 'purple' },
-            { href: '/dashboard/activity-logs', icon: BookOpen, label: '活動を記録する', desc: '今日の学びを残す', color: 'orange' },
-            { href: '/dashboard/essays', icon: FileText, label: '志望理由書を書く', desc: 'AIに添削してもらう', color: 'pink' },
-            { href: '/dashboard/profile', icon: Brain, label: 'プロフィール更新', desc: '自分の情報を充実させる', color: 'gray' },
+            { href: '/dashboard/profile', icon: User, label: 'プロフィール', desc: '情報・出願日を入力', color: 'text-gray-500' },
+            { href: '/dashboard/guidance', icon: Lightbulb, label: '活動提案', desc: 'AIが活動をデザイン', color: 'text-yellow-500' },
+            { href: '/dashboard/activity-logs', icon: BookOpen, label: '活動ログ', desc: '今日の学びを記録', color: 'text-green-500' },
+            { href: '/dashboard/projects', icon: FolderOpen, label: 'プロジェクト', desc: '活動計画を管理', color: 'text-blue-500' },
+            { href: '/dashboard/essays', icon: FileText, label: '志望理由書', desc: 'AI添削・面接対策', color: 'text-purple-500' },
+            { href: '/dashboard/consistency-check', icon: GitMerge, label: '一貫性チェック', desc: 'ストーリーを点検', color: 'text-indigo-500' },
           ].map((a) => {
             const Icon = a.icon
             return (
               <Link key={a.href} href={a.href}>
-                <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-                  <CardContent className="pt-4 pb-4 flex items-center gap-3">
-                    <Icon className="h-8 w-8 text-gray-400 flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm text-gray-800">{a.label}</p>
-                      <p className="text-xs text-gray-500">{a.desc}</p>
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-gray-300 flex-shrink-0" />
+                <Card className="hover:shadow-sm transition-shadow cursor-pointer h-full">
+                  <CardContent className="pt-3 pb-3 px-3">
+                    <Icon className={`h-4 w-4 ${a.color} mb-1.5`} />
+                    <p className="text-sm font-medium text-gray-800 leading-tight">{a.label}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{a.desc}</p>
                   </CardContent>
                 </Card>
               </Link>
@@ -142,25 +147,6 @@ export default async function DashboardPage() {
           })}
         </div>
       </div>
-
-      {/* Today's Tasks */}
-      {todayTasks.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">今日のタスク</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2">
-              {todayTasks.map((task, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <span className="text-blue-500 mt-0.5">▸</span>
-                  <span className="text-gray-700">{task}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

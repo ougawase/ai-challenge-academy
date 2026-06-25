@@ -16,6 +16,7 @@ interface Log {
   next_action: string
   ai_feedback: {
     meaning: string
+    story_quality: string
     admission_points: string
     next_suggestions: string
     deep_questions: string
@@ -32,7 +33,9 @@ export default function ActivityLogsPage() {
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
     content: '',
+    motivation: '',
     people_met: '',
+    struggle: '',
     learning: '',
     problem: '',
     next_action: '',
@@ -56,7 +59,7 @@ export default function ActivityLogsPage() {
       body: JSON.stringify(form),
     })
     if (res.ok) {
-      setForm({ date: new Date().toISOString().split('T')[0], content: '', people_met: '', learning: '', problem: '', next_action: '' })
+      setForm({ date: new Date().toISOString().split('T')[0], content: '', motivation: '', people_met: '', struggle: '', learning: '', problem: '', next_action: '' })
       setShowForm(false)
       await loadLogs()
     }
@@ -91,8 +94,22 @@ export default function ActivityLogsPage() {
               <Textarea value={form.content} onChange={(e) => setForm(f => ({ ...f, content: e.target.value }))} placeholder="どんな活動をしましたか？" rows={3} />
             </div>
             <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">
+                なぜこの活動をしようと思ったか（動機）
+                <span className="ml-2 text-xs font-normal text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">AO重要</span>
+              </label>
+              <Textarea value={form.motivation} onChange={(e) => setForm(f => ({ ...f, motivation: e.target.value }))} placeholder="例：地元の過疎化問題を身近に感じていて、自分に何かできないか考えていたから" rows={2} />
+            </div>
+            <div>
               <label className="text-sm font-medium text-gray-700 block mb-1">出会った人・話した人</label>
               <Input value={form.people_met} onChange={(e) => setForm(f => ({ ...f, people_met: e.target.value }))} placeholder="例：地域の農家の方、同年代のボランティア3人" />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">
+                活動中に困ったこと・葛藤した場面（過程）
+                <span className="ml-2 text-xs font-normal text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">AO重要</span>
+              </label>
+              <Textarea value={form.struggle} onChange={(e) => setForm(f => ({ ...f, struggle: e.target.value }))} placeholder="例：アンケートを依頼したら断られ続けた。最初の3日間は1人も協力してもらえなかった" rows={2} />
             </div>
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1">学んだこと・気づき</label>
@@ -144,6 +161,12 @@ export default function ActivityLogsPage() {
                     <p className="font-medium text-gray-700">✨ 活動の意義</p>
                     <p className="text-gray-600">{log.ai_feedback.meaning}</p>
                   </div>
+                  {log.ai_feedback.story_quality && (
+                    <div className="bg-orange-50 rounded p-2">
+                      <p className="font-medium text-orange-800">📖 動機→過程→学びのストーリー評価</p>
+                      <p className="text-orange-700 text-xs mt-1">{log.ai_feedback.story_quality}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="font-medium text-gray-700">🎯 総合型選抜で使えるポイント</p>
                     <p className="text-gray-600 whitespace-pre-line">{log.ai_feedback.admission_points}</p>

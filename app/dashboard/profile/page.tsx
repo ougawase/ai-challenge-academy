@@ -44,6 +44,7 @@ export default function ProfilePage() {
     grade: '',
     school_name: '',
     location: '',
+    application_deadline: '',
     interests: [] as string[],
     target_faculties: [] as string[],
     faculty_direction: '',
@@ -66,6 +67,7 @@ export default function ProfilePage() {
           grade: data.grade || '',
           school_name: data.school_name || '',
           location: data.location || '',
+          application_deadline: data.application_deadline || '',
           interests: data.interests || [],
           target_faculties: data.target_faculties || [],
           faculty_direction: data.faculty_direction || '',
@@ -111,6 +113,7 @@ export default function ProfilePage() {
       grade: form.grade,
       school_name: form.school_name,
       location: form.location,
+      application_deadline: form.application_deadline || null,
       interests: form.interests,
       target_faculties: form.target_faculties,
       faculty_direction: form.faculty_direction,
@@ -175,6 +178,25 @@ export default function ProfilePage() {
             <div className="space-y-2">
               <Label>お住まいの地域</Label>
               <Input placeholder="沖縄県宮古島市" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label className="flex items-center gap-2">
+                出願（書類提出）予定日
+                <span className="text-xs font-normal text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">設定するとAIが毎日の計画を最適化します</span>
+              </Label>
+              <Input
+                type="date"
+                value={form.application_deadline}
+                onChange={e => setForm({ ...form, application_deadline: e.target.value })}
+                min={new Date().toISOString().split('T')[0]}
+              />
+              {form.application_deadline && (
+                <p className="text-xs text-gray-500">
+                  出願まであと <strong className="text-blue-600">
+                    {Math.ceil((new Date(form.application_deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))}日
+                  </strong>
+                </p>
+              )}
             </div>
           </div>
         </CardContent>

@@ -11,21 +11,29 @@ export async function POST(req: NextRequest) {
 
   const logData = await req.json()
 
-  const prompt = `以下の高校生の活動ログに対してフィードバックを提供してください。
+  const prompt = `あなたは総合型選抜（AO入試）の専門コーチです。以下の高校生の活動ログに対してフィードバックを提供してください。
 
 活動日: ${logData.date}
 今日やったこと: ${logData.content}
+【なぜこの活動をしようと思ったか（動機）】: ${logData.motivation || '未記入'}
 出会った人: ${logData.people_met || 'なし'}
-学んだこと: ${logData.learning || '未記入'}
+【活動中に困ったこと・葛藤した場面（過程）】: ${logData.struggle || '未記入'}
+学んだこと・気づき: ${logData.learning || '未記入'}
 困ったこと・課題: ${logData.problem || 'なし'}
 次にやること: ${logData.next_action || '未定'}
 
-以下のJSON形式で励ましのフィードバックを提供してください：
+---
+【評価の観点】
+総合型選抜で合格するには「結果・実績」だけでなく「なぜやったか（動機）→どう取り組んだか（過程）→何を得たか（学び）」の3点セットが必須です。
+面接官は「この活動を通じてどう成長しましたか？」と必ず聞きます。
+
+以下のJSON形式で具体的なフィードバックを提供してください：
 {
   "meaning": "この活動の意義・価値（2-3文、高校生を励ます内容）",
+  "story_quality": "動機→過程→学びのストーリーの完成度評価（「動機が明確」「過程の葛藤が見えない」「学びが表面的」など具体的に2-3文）",
   "admission_points": "総合型選抜で使えるポイント（2-3点、具体的に）",
   "next_suggestions": "次の行動提案（2-3点、具体的に）",
-  "deep_questions": "深掘り質問（2-3問、振り返りを促す）"
+  "deep_questions": "面接で聞かれる深掘り質問（2-3問、今のうちに考えておくべき問い）"
 }`
 
   const response = await anthropic.messages.create({
